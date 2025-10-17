@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CampusCache</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+      body { font-family: system-ui, sans-serif; margin:0; }
+      #root { height: 100vh; }
+      .topbar { display:flex; gap:12px; padding:12px; border-bottom:1px solid #ddd; align-items:center; }
+      .container { padding: 12px; }
+      .card { border:1px solid #e5e5e5; border-radius:10px; padding:12px; margin:8px 0; }
+      input, select, button { padding:8px; }
+      .map { height: 70vh; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
