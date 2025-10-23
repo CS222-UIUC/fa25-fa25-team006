@@ -1,22 +1,342 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CampusCache</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <style>
-      body { font-family: system-ui, sans-serif; margin:0; }
-      #root { height: 100vh; }
-      .topbar { display:flex; gap:12px; padding:12px; border-bottom:1px solid #ddd; align-items:center; }
-      .container { padding: 12px; }
-      .card { border:1px solid #e5e5e5; border-radius:10px; padding:12px; margin:8px 0; }
-      input, select, button { padding:8px; }
-      .map { height: 70vh; }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Geocaching (Local Demo)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- React via CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- Leaflet (map, no keys) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0e12;
+      --panel:#12161c;
+      --muted:#9aa4b2;
+      --text:#e8edf3;
+      --brand:#6aa7ff;
+      --accent:#88f0c2;
+      --border:#1d242d;
+      --chip:#1a212b;
+      --btn:#1b5cff;
+      --btn-ghost:#1a212b;
+      --shadow: 0 6px 24px rgba(0,0,0,.35);
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:linear-gradient(180deg,#0b0e12, #0b0e12 40%, #0e131a 100%);
+      color:var(--text); font: 15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;
+    }
+
+    /* Top bar */
+    .appbar{
+      position:sticky; top:0; z-index:10;
+      backdrop-filter:saturate(140%) blur(10px);
+      background:rgba(11,14,18,.7); border-bottom:1px solid var(--border);
+    }
+    .appbar-inner{
+      max-width:1080px; margin:0 auto; padding:14px 18px;
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+    }
+    .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px}
+    .badge{font-size:12px; padding:2px 8px; border-radius:999px; background:#0f1420; border:1px solid var(--border); color:var(--muted)}
+
+    .container{max-width:1080px; margin:18px auto; padding:0 18px}
+    .panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow)}
+
+    /* Controls */
+    .controls{ padding:16px; display:flex; flex-wrap:wrap; gap:10px; align-items:center }
+    .input{
+      background:#0d1218; border:1px solid var(--border); color:var(--text);
+      padding:10px 12px; border-radius:10px; outline:none; min-width:220px;
+    }
+    .input.small{min-width:100px; width:110px}
+    .btn{
+      border:0; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600;
+      transition:.15s transform ease, .15s opacity ease;
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn:active{transform:translateY(0)}
+    .btn-primary{background:var(--btn); color:#fff}
+    .btn-ghost{background:var(--btn-ghost); color:var(--text); border:1px solid var(--border)}
+    .btn-warning{background:#f0b429; color:#101418}
+
+    /* Map */
+    #map{ height:360px; width:100%; border-radius:calc(var(--radius) - 2px); overflow:hidden }
+    .map-wrap{ padding:10px; }
+
+    /* Sections */
+    h2{margin:14px 16px 8px; font-size:18px; letter-spacing:.2px}
+    .grid{
+      display:grid; gap:12px; padding:10px;
+      grid-template-columns: repeat(auto-fill, minmax(280px,1fr));
+    }
+
+    /* Cards */
+    .card{
+      background:#0f141b; border:1px solid var(--border); border-radius:12px; padding:12px;
+      box-shadow: 0 4px 18px rgba(0,0,0,.25);
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .row{display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap}
+    .title{font-weight:700}
+    .meta{color:var(--muted); font-size:12px}
+    .chips{display:flex; flex-wrap:wrap; gap:6px}
+    .chip{background:var(--chip); border:1px solid var(--border); color:#c4ceda; padding:2px 8px; border-radius:999px; font-size:12px}
+    .coords{color:var(--muted); font-family:ui-monospace, Menlo, Consolas, monospace; font-size:12px}
+
+    /* Toast */
+    .toast{
+      position:fixed; bottom:16px; right:16px; background:#11161e; border:1px solid var(--border);
+      padding:10px 12px; border-radius:10px; color:#cfe3ff; box-shadow:var(--shadow); opacity:0; transform:translateY(8px);
+      transition:.2s ease; pointer-events:none;
+    }
+    .toast.show{opacity:1; transform:translateY(0)}
+  </style>
+</head>
+<body>
+  <div class="appbar">
+    <div class="appbar-inner">
+      <div class="brand">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#6aa7ff" aria-hidden="true"><path d="M12 2l2.39 4.84L20 8l-4 3.89L17 18l-5-2.63L7 18l1-6.11L4 8l5.61-1.16L12 2z"/></svg>
+        GeoCache <span class="badge">local demo</span>
+      </div>
+      <div id="auth-spot"></div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="panel">
+      <div class="controls" id="controls-spot"></div>
+      <div class="map-wrap"><div id="map"></div></div>
+    </div>
+
+    <div class="panel" style="margin-top:14px" id="recs-panel">
+      <h2>Recommendations</h2>
+      <div class="grid" id="recs-spot"></div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <h2>Nearby Caches</h2>
+      <div class="grid" id="grid-spot"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const e = React.createElement;
+
+    // Simple token store
+    const tokenStore = {
+      get: () => localStorage.getItem("token") || "",
+      set: (t) => localStorage.setItem("token", t || ""),
+      clear: () => localStorage.removeItem("token"),
+    };
+
+    function toast(msg){
+      const el=document.getElementById('toast');
+      el.textContent=msg; el.classList.add('show');
+      setTimeout(()=>el.classList.remove('show'),1600);
+    }
+
+    function useApi() {
+      const j = (r) => { if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); };
+      const h = () => {
+        const t = tokenStore.get();
+        return t ? { "Content-Type":"application/json", "x-auth-token": t } : { "Content-Type":"application/json" };
+      };
+      return {
+        me:   () => fetch('/api/me', { headers: h() }).then(j),
+        login:(u,p)=> fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:u,password:p}) }).then(j),
+        logout: () => fetch('/api/logout', { method:'POST', headers: h() }).then(j),
+        list: (q, box) => fetch(`/api/caches?q=${encodeURIComponent(q||"")}${box||""}`).then(j),
+        toggleFav: (cacheId) => fetch('/api/favorites/toggle', {method:'POST', headers: h(), body: JSON.stringify({cacheId})}).then(j),
+        favs: () => fetch('/api/favorites', { headers: h() }).then(j),
+        finds: (cacheId, note) => fetch('/api/finds', {method:'POST', headers: h(), body: JSON.stringify({cacheId, note})}).then(j),
+        recs: () => fetch('/api/recommendations', { headers: h() }).then(j),
+      };
+    }
+
+    function useLeafletMap(center=[40.11,-88.227], zoom=14) {
+      const mapRef = React.useRef(null);
+      const layerRef = React.useRef(null);
+
+      React.useEffect(() => {
+        mapRef.current = L.map('map', { zoomControl: false }).setView(center, zoom);
+        L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap'
+        }).addTo(mapRef.current);
+        layerRef.current = L.layerGroup().addTo(mapRef.current);
+        return () => mapRef.current?.remove();
+      }, []);
+
+      const setMarkers = (points=[]) => {
+        if (!layerRef.current) return;
+        layerRef.current.clearLayers();
+        points.forEach(p => {
+          const m = L.marker([p.lat, p.lon]).bindPopup(
+            `<strong>${p.title}</strong><br/>${p.category} • diff ${p.difficulty}<br/><small>#${p.id}</small>`
+          );
+          layerRef.current.addLayer(m);
+        });
+      };
+
+      const fitToPoints = (points=[]) => {
+        if (!mapRef.current || !points.length) return;
+        const bounds = L.latLngBounds(points.map(p => [p.lat, p.lon]));
+        mapRef.current.fitBounds(bounds.pad(0.25));
+      };
+
+      return { setMarkers, fitToPoints };
+    }
+
+    function App(){
+      const api = useApi();
+      const [me, setMe] = React.useState(null);
+      const [loginErr, setLoginErr] = React.useState("");
+      const [username, setUsername] = React.useState("");
+      const [password, setPassword] = React.useState("");
+
+      const [q, setQ] = React.useState("");
+      const [lat, setLat] = React.useState("40.1100");
+      const [lon, setLon] = React.useState("-88.2272");
+      const [delta, setDelta] = React.useState("0.02");
+      const [rows, setRows] = React.useState([]);
+      const [favs, setFavs] = React.useState([]);
+      const [recs, setRecs] = React.useState([]);
+      const [loading, setLoading] = React.useState(false);
+
+      const map = useLeafletMap();
+      const bbox = () => `&lat=${lat}&lon=${lon}&delta=${delta}`;
+
+      const loadPublic = async () => {
+        setLoading(true);
+        try {
+          const list = await api.list(q, bbox());
+          setRows(list);
+          map.setMarkers(list); map.fitToPoints(list);
+        } catch(e){ toast(e.message); }
+        finally{ setLoading(false); }
+      };
+
+      const loadAuthed = async () => {
+        if (!me) return;
+        try {
+          const [fav, rec] = await Promise.all([api.favs(), api.recs()]);
+          setFavs(fav); setRecs(rec);
+        } catch {}
+      };
+
+      React.useEffect(() => {
+        (async () => {
+          const t = tokenStore.get();
+          if (t) {
+            try { const who = await api.me(); setMe(who); } catch { tokenStore.clear(); }
+          }
+          await loadPublic(); await loadAuthed();
+        })();
+      }, []);
+
+      const isFav = (id) => favs.some(f => f.id === id);
+
+      const handleLogin = async (e)=>{
+        e.preventDefault(); setLoginErr("");
+        try{
+          const r = await api.login(username, password);
+          tokenStore.set(r.token); setMe(r.user); setUsername(""); setPassword("");
+          toast(`Welcome, ${r.user.username}!`);
+          await loadPublic(); await loadAuthed();
+        }catch{ setLoginErr("Invalid username or password"); }
+      };
+      const handleLogout = async ()=>{
+        await api.logout(); tokenStore.clear(); setMe(null); setFavs([]); setRecs([]); toast("Logged out");
+      };
+
+      return e(React.Fragment,null,
+        // Auth bar (in appbar right side)
+        ReactDOM.createPortal(
+          me
+          ? e('div',{className:'row'},
+              e('span',null, 'Signed in as ', e('strong',null, me.username)),
+              e('button',{className:'btn btn-ghost', onClick:handleLogout},'Log out'))
+          : e('form',{className:'row', onSubmit:handleLogin},
+              e('input',{className:'input', placeholder:'username (admin or alex)', value:username, onChange:e=>setUsername(e.target.value)}),
+              e('input',{className:'input', type:'password', placeholder:'password', value:password, onChange:e=>setPassword(e.target.value)}),
+              e('button',{className:'btn btn-primary', type:'submit'}, 'Log in'),
+              loginErr && e('span',{style:{color:'#ff9ea3', marginLeft:6}}, loginErr)
+            ),
+          document.getElementById('auth-spot')
+        ),
+
+        // Controls
+        ReactDOM.createPortal(
+          e('div', {className:'row', style:{width:'100%'}},
+            e('input',{className:'input', placeholder:'Search title, category, tag…', value:q, onChange:e=>setQ(e.target.value), style:{flex:'1 1 280px'}}),
+            e('input',{className:'input small', placeholder:'lat', value:lat, onChange:e=>setLat(e.target.value)}),
+            e('input',{className:'input small', placeholder:'lon', value:lon, onChange:e=>setLon(e.target.value)}),
+            e('input',{className:'input small', placeholder:'delta', value:delta, onChange:e=>setDelta(e.target.value)}),
+            e('button',{className:'btn btn-primary', onClick:()=>{ loadPublic(); if(me) loadAuthed(); }}, loading?'Loading…':'Refresh')
+          ),
+          document.getElementById('controls-spot')
+        ),
+
+        // Recommendations (grid)
+        ReactDOM.createPortal(
+          (me && recs.length>0)
+            ? recs.slice(0,6).map(c => e('div',{className:'card', key:'rec-'+c.id},
+                e('div',{className:'row'},
+                  e('div',null,
+                    e('div',{className:'title'}, c.title,' ', e('span',{className:'meta'}, `#${c.id}`)),
+                    e('div',{className:'meta'}, `${c.category} • diff ${c.difficulty} • finds ${c.finds} • score ${c.score}`)
+                  ),
+                  e('div',null,
+                    e('button',{className:'btn btn-ghost', onClick:()=>api.finds(c.id,'from rec').then(()=>{ loadPublic(); loadAuthed(); toast('Find logged'); })}, 'Log find'),
+                    ' ',
+                    e('button',{className:'btn', style:{background: isFav(c.id)?'#2f8dff': 'var(--btn)'}, onClick:()=>api.toggleFav(c.id).then(()=>{ loadAuthed(); toast(isFav(c.id)?'Removed':'Saved'); })}, isFav(c.id)?'★ Unsave':'☆ Save')
+                  )
+                ),
+                e('div',{className:'chips'}, c.tags.map(t => e('span',{className:'chip', key:t}, t)))
+              ))
+            : e('div',{className:'meta', style:{padding:'0 12px 12px'}}, me ? 'No recommendations yet — save a few favorites.' : 'Log in to see recommendations.'),
+          document.getElementById('recs-spot')
+        ),
+
+        // Nearby grid
+        ReactDOM.createPortal(
+          rows.map(c => e('div',{className:'card', key:c.id},
+            e('div',{className:'row'},
+              e('div',null,
+                e('div',{className:'title'}, c.title,' ', e('span',{className:'meta'}, `#${c.id}`)),
+                e('div',{className:'meta'}, `${c.category} • diff ${c.difficulty} • finds ${c.finds}`)
+              ),
+              e('div',null,
+                me
+                  ? e(React.Fragment,null,
+                      e('button',{className:'btn btn-ghost', onClick:()=>api.finds(c.id,'found it!').then(()=>{ loadPublic(); loadAuthed(); toast('Find logged'); })}, 'Log find'),
+                      ' ',
+                      e('button',{className:'btn', style:{background: isFav(c.id)?'#2f8dff':'var(--btn)'}, onClick:()=>api.toggleFav(c.id).then(()=>{ loadAuthed(); toast(isFav(c.id)?'Removed':'Saved'); })}, isFav(c.id)?'★ Unsave':'☆ Save')
+                    )
+                  : e('button',{className:'btn btn-warning', onClick:()=>toast('Log in to interact')}, 'Log in to interact')
+              )
+            ),
+            e('div',{className:'chips'}, c.tags.map(t => e('span',{className:'chip', key:t}, t))),
+            e('div',{className:'coords'}, `${c.lat.toFixed(5)}, ${c.lon.toFixed(5)}`)
+          )),
+          document.getElementById('grid-spot')
+        )
+      );
+    }
+
+    ReactDOM.createRoot(document.createElement('div')).render(React.createElement(App));
+  </script>
+</body>
 </html>
