@@ -15,36 +15,19 @@
 
   <style>
     :root{
-      --bg:#0b0e12;
-      --panel:#12161c;
-      --muted:#9aa4b2;
-      --text:#e8edf3;
-      --brand:#6aa7ff;
-      --accent:#88f0c2;
-      --border:#1d242d;
-      --chip:#1a212b;
-      --btn:#1b5cff;
-      --btn-ghost:#1a212b;
-      --shadow: 0 6px 24px rgba(0,0,0,.35);
-      --radius:14px;
+      --bg:#0b0e12; --panel:#12161c; --muted:#9aa4b2; --text:#e8edf3; --brand:#6aa7ff;
+      --accent:#88f0c2; --border:#1d242d; --chip:#1a212b; --btn:#1b5cff; --btn-ghost:#1a212b;
+      --shadow: 0 6px 24px rgba(0,0,0,.35); --radius:14px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{
-      margin:0; background:linear-gradient(180deg,#0b0e12, #0b0e12 40%, #0e131a 100%);
-      color:var(--text); font: 15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;
-    }
+    body{ margin:0; background:linear-gradient(180deg,#0b0e12, #0b0e12 40%, #0e131a 100%);
+      color:var(--text); font: 15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial; }
 
     /* Top bar */
-    .appbar{
-      position:sticky; top:0; z-index:10;
-      backdrop-filter:saturate(140%) blur(10px);
-      background:rgba(11,14,18,.7); border-bottom:1px solid var(--border);
-    }
-    .appbar-inner{
-      max-width:1080px; margin:0 auto; padding:14px 18px;
-      display:flex; gap:12px; align-items:center; justify-content:space-between;
-    }
+    .appbar{ position:sticky; top:0; z-index:10; backdrop-filter:saturate(140%) blur(10px);
+      background:rgba(11,14,18,.7); border-bottom:1px solid var(--border); }
+    .appbar-inner{ max-width:1080px; margin:0 auto; padding:14px 18px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
     .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px}
     .badge{font-size:12px; padding:2px 8px; border-radius:999px; background:#0f1420; border:1px solid var(--border); color:var(--muted)}
 
@@ -53,38 +36,28 @@
 
     /* Controls */
     .controls{ padding:16px; display:flex; flex-wrap:wrap; gap:10px; align-items:center }
-    .input{
-      background:#0d1218; border:1px solid var(--border); color:var(--text);
-      padding:10px 12px; border-radius:10px; outline:none; min-width:220px;
-    }
+    .input{ background:#0d1218; border:1px solid var(--border); color:var(--text); padding:10px 12px; border-radius:10px; outline:none; min-width:220px; }
     .input.small{min-width:100px; width:110px}
-    .btn{
-      border:0; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600;
-      transition:.15s transform ease, .15s opacity ease;
-    }
-    .btn:hover{transform:translateY(-1px)}
-    .btn:active{transform:translateY(0)}
+    .btn{ border:0; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; transition:.15s transform ease, .15s opacity ease; }
+    .btn:hover{transform:translateY(-1px)} .btn:active{transform:translateY(0)}
     .btn-primary{background:var(--btn); color:#fff}
     .btn-ghost{background:var(--btn-ghost); color:var(--text); border:1px solid var(--border)}
     .btn-warning{background:#f0b429; color:#101418}
 
     /* Map */
-    #map{ height:360px; width:100%; border-radius:calc(var(--radius) - 2px); overflow:hidden }
-    .map-wrap{ padding:10px; }
+    #map{ height:360px; width:100%; border-radius:calc(var(--radius) - 2px); overflow:hidden; position:relative }
+    .map-wrap{ padding:10px; position:relative }
+    /* tiny loading spinner (minimal change) */
+    .loading{ position:absolute; right:16px; top:16px; width:18px; height:18px; border:2px solid rgba(255,255,255,.25); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite; display:none }
+    .loading.show{ display:block }
+    @keyframes spin{ to{ transform:rotate(360deg) } }
 
     /* Sections */
     h2{margin:14px 16px 8px; font-size:18px; letter-spacing:.2px}
-    .grid{
-      display:grid; gap:12px; padding:10px;
-      grid-template-columns: repeat(auto-fill, minmax(280px,1fr));
-    }
+    .grid{ display:grid; gap:12px; padding:10px; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); }
 
     /* Cards */
-    .card{
-      background:#0f141b; border:1px solid var(--border); border-radius:12px; padding:12px;
-      box-shadow: 0 4px 18px rgba(0,0,0,.25);
-      display:flex; flex-direction:column; gap:10px;
-    }
+    .card{ background:#0f141b; border:1px solid var(--border); border-radius:12px; padding:12px; box-shadow: 0 4px 18px rgba(0,0,0,.25); display:flex; flex-direction:column; gap:10px }
     .row{display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap}
     .title{font-weight:700}
     .meta{color:var(--muted); font-size:12px}
@@ -93,11 +66,9 @@
     .coords{color:var(--muted); font-family:ui-monospace, Menlo, Consolas, monospace; font-size:12px}
 
     /* Toast */
-    .toast{
-      position:fixed; bottom:16px; right:16px; background:#11161e; border:1px solid var(--border);
+    .toast{ position:fixed; bottom:16px; right:16px; background:#11161e; border:1px solid var(--border);
       padding:10px 12px; border-radius:10px; color:#cfe3ff; box-shadow:var(--shadow); opacity:0; transform:translateY(8px);
-      transition:.2s ease; pointer-events:none;
-    }
+      transition:.2s ease; pointer-events:none; }
     .toast.show{opacity:1; transform:translateY(0)}
   </style>
 </head>
@@ -115,7 +86,7 @@
   <div class="container">
     <div class="panel">
       <div class="controls" id="controls-spot"></div>
-      <div class="map-wrap"><div id="map"></div></div>
+      <div class="map-wrap"><div id="map"></div><div id="map-loading" class="loading" aria-hidden="true"></div></div>
     </div>
 
     <div class="panel" style="margin-top:14px" id="recs-panel">
@@ -172,10 +143,14 @@
       React.useEffect(() => {
         mapRef.current = L.map('map', { zoomControl: false }).setView(center, zoom);
         L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap'
-        }).addTo(mapRef.current);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(mapRef.current);
         layerRef.current = L.layerGroup().addTo(mapRef.current);
+
+        // tiny enhancement: clicking map copies lat/lon into the inputs
+        mapRef.current.on('click', (ev)=>{
+          const { lat, lng } = ev.latlng; window.dispatchEvent(new CustomEvent('map-clicked', { detail: { lat, lon: lng } }));
+        });
+
         return () => mapRef.current?.remove();
       }, []);
 
@@ -218,14 +193,19 @@
       const map = useLeafletMap();
       const bbox = () => `&lat=${lat}&lon=${lon}&delta=${delta}`;
 
+      const setMapLoading = (on)=>{
+        const el = document.getElementById('map-loading');
+        if (el) el.classList.toggle('show', !!on);
+      };
+
       const loadPublic = async () => {
-        setLoading(true);
+        setLoading(true); setMapLoading(true);
         try {
           const list = await api.list(q, bbox());
           setRows(list);
           map.setMarkers(list); map.fitToPoints(list);
         } catch(e){ toast(e.message); }
-        finally{ setLoading(false); }
+        finally{ setLoading(false); setMapLoading(false); }
       };
 
       const loadAuthed = async () => {
@@ -284,7 +264,7 @@
             e('input',{className:'input small', placeholder:'lat', value:lat, onChange:e=>setLat(e.target.value)}),
             e('input',{className:'input small', placeholder:'lon', value:lon, onChange:e=>setLon(e.target.value)}),
             e('input',{className:'input small', placeholder:'delta', value:delta, onChange:e=>setDelta(e.target.value)}),
-            e('button',{className:'btn btn-primary', onClick:()=>{ loadPublic(); if(me) loadAuthed(); }}, loading?'Loading…':'Refresh')
+            e('button',{className:'btn btn-primary', disabled:loading, onClick:()=>{ loadPublic(); if(me) loadAuthed(); }}, loading?'Loading…':'Refresh')
           ),
           document.getElementById('controls-spot')
         ),
@@ -332,11 +312,26 @@
             e('div',{className:'coords'}, `${c.lat.toFixed(5)}, ${c.lon.toFixed(5)}`)
           )),
           document.getElementById('grid-spot')
+        ),
+
+        // tiny loading spinner on map while fetching
+        ReactDOM.createPortal(
+          e('div',{className: loading ? 'loading show' : 'loading', id:'map-loading'}),
+          document.querySelector('.map-wrap')
         )
       );
     }
 
     ReactDOM.createRoot(document.createElement('div')).render(React.createElement(App));
+
+    // sync map click -> inputs (kept minimal; doesn't change server API)
+    window.addEventListener('map-clicked', (ev)=>{
+      const { lat, lon } = ev.detail;
+      const latInput = document.querySelector('input[placeholder="lat"]');
+      const lonInput = document.querySelector('input[placeholder="lon"]');
+      if(latInput) latInput.value = lat.toFixed(4);
+      if(lonInput) lonInput.value = lon.toFixed(4);
+    });
   </script>
 </body>
 </html>
