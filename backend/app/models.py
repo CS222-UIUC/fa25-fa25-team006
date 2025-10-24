@@ -14,6 +14,9 @@ class User(Base):
     caches: Mapped[list["Cache"]] = relationship("Cache", back_populates="creator")
     logs: Mapped[list["LogEntry"]] = relationship("LogEntry", back_populates="user")
 
+    def __repr__(self):
+        return f"<User(id={self.id}, username='{self.username}', display_name='{self.display_name}')>"
+
 class Cache(Base):
     __tablename__ = "caches"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -21,13 +24,16 @@ class Cache(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     latitude: Mapped[float] = mapped_column(Float)
     longitude: Mapped[float] = mapped_column(Float)
-    difficulty: Mapped[int] = mapped_column(Integer, default=1)  # 1-5
+    difficulty: Mapped[int] = mapped_column(Integer, default=1)
     category: Mapped[str] = mapped_column(String(50), default="general")
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     creator: Mapped["User"] = relationship("User", back_populates="caches")
     logs: Mapped[list["LogEntry"]] = relationship("LogEntry", back_populates="cache", cascade="all, delete")
+
+    def __repr__(self):
+        return f"<Cache(id={self.id}, title='{self.title}', creator_id={self.creator_id})>"
 
 class LogEntry(Base):
     __tablename__ = "logs"
@@ -43,3 +49,6 @@ class LogEntry(Base):
     __table_args__ = (
         UniqueConstraint('user_id', 'cache_id', name='unique_find_per_user_cache'),
     )
+
+    def __repr__(self):
+        return f"<LogEntry(id={self.id}, user_id={self.user_id}, cache_id={self.cache_id})>"
