@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from .settings import settings
-from .database import Base, engine, get_db
+from .database import Base, engine, get_db, SessionLocal
 from . import models, schemas
 from .auth import get_password_hash, verify_password, create_access_token, get_current_user
 
@@ -22,6 +22,38 @@ app.add_middleware(
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+
+# Initialize default users if they don't exist
+@app.on_event("startup")
+def init_default_users():
+    db = SessionLocal()
+    try:
+        default_users = [
+            {"username": "admin", "password": "password", "display_name": "Admin"},
+            {"username": "alex", "password": "password", "display_name": "Alex"},
+        ]
+        for user_data in default_users:
+            existing = db.query(models.User).filter(models.User.username == user_data["username"]).first()
+            if not existing:
+                user = models.User(
+                    username=user_data["username"],
+                    hashed_password=get_password_hash(user_data["password"]),
+                    display_name=user_data["display_name"],
+                )
+                db.add(user)
+                print(f"Created default user: {user_data['username']}")
+            else:
+                # Update password if user exists but password might be wrong
+                # This ensures admin/password always works
+                existing.hashed_password = get_password_hash(user_data["password"])
+                existing.display_name = user_data["display_name"]
+                print(f"Updated default user: {user_data['username']}")
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Error initializing default users: {e}")
+    finally:
+        db.close()
 
 # ---- Auth ----
 

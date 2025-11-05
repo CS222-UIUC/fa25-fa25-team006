@@ -256,11 +256,11 @@
       const j = (r) => { if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); };
       const h = () => {
         const t = tokenStore.get();
-        return t ? { "Content-Type":"application/json", "x-auth-token": t } : { "Content-Type":"application/json" };
+        return t ? { "Content-Type":"application/json", "Authorization": `Bearer ${t}` } : { "Content-Type":"application/json" };
       };
       return {
         me:   () => fetch('/api/me', { headers: h() }).then(j),
-        login:(u,p)=> fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:u,password:p}) }).then(j),
+        login:(u,p)=> fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({username:u,password:p}) }).then(j),
         logout: () => fetch('/api/logout', { method:'POST', headers: h() }).then(j),
         list: (q, box) => fetch(`/api/caches?q=${encodeURIComponent(q||"")}${box||""}`).then(j),
         toggleFav: (cacheId) => fetch('/api/favorites/toggle', {method:'POST', headers: h(), body: JSON.stringify({cacheId})}).then(j),
@@ -288,8 +288,10 @@
         if (!layerRef.current) return;
         layerRef.current.clearLayers();
         points.forEach(p => {
-          const m = L.marker([p.lat, p.lon]).bindPopup(
-            `<strong>${p.title}</strong><br/>${p.category} • diff ${p.difficulty}<br/><small>#${p.id}</small>`
+          const lat = p.latitude || p.lat || 0;
+          const lon = p.longitude || p.lon || 0;
+          const m = L.marker([lat, lon]).bindPopup(
+            `<strong>${p.title}</strong><br/>${p.category || 'general'} • diff ${p.difficulty || 1}<br/><small>#${p.id}</small>`
           );
           layerRef.current.addLayer(m);
         });
@@ -297,7 +299,7 @@
 
       const fitToPoints = (points=[]) => {
         if (!mapRef.current || !points.length) return;
-        const bounds = L.latLngBounds(points.map(p => [p.lat, p.lon]));
+        const bounds = L.latLngBounds(points.map(p => [p.latitude || p.lat || 0, p.longitude || p.lon || 0]));
         mapRef.current.fitBounds(bounds.pad(0.25));
       };
 
@@ -357,8 +359,11 @@
         e.preventDefault(); setLoginErr("");
         try{
           const r = await api.login(username, password);
-          tokenStore.set(r.token); setMe(r.user); setUsername(""); setPassword("");
-          toast(`Welcome, ${r.user.username}!`);
+          tokenStore.set(r.access_token); 
+          const who = await api.me(); 
+          setMe(who); 
+          setUsername(""); setPassword("");
+          toast(`Welcome, ${who.username}!`);
           await loadPublic(); await loadAuthed();
         }catch{ setLoginErr("Invalid username or password"); }
       };
@@ -401,7 +406,7 @@
                 e('div',{className:'row'},
                   e('div',null,
                     e('div',{className:'title'}, c.title,' ', e('span',{className:'meta'}, `#${c.id}`)),
-                    e('div',{className:'meta'}, `${c.category} • diff ${c.difficulty} • finds ${c.finds} • score ${c.score}`)
+                    e('div',{className:'meta'}, `${c.category || 'general'} • diff ${c.difficulty || 1}`)
                   ),
                   e('div',null,
                     e('button',{className:'btn btn-ghost', onClick:()=>api.finds(c.id,'from rec').then(()=>{ loadPublic(); loadAuthed(); toast('Find logged'); })}, 'Log find'),
@@ -409,7 +414,7 @@
                     e('button',{className:'btn', style:{background: isFav(c.id)?'var(--uiuc-blue)': 'var(--btn)'}, onClick:()=>api.toggleFav(c.id).then(()=>{ loadAuthed(); toast(isFav(c.id)?'Removed':'Saved'); })}, isFav(c.id)?'★ Unsave':'☆ Save')
                   )
                 ),
-                e('div',{className:'chips'}, c.tags.map(t => e('span',{className:'chip', key:t}, t)))
+                e('div',{className:'chips'}, (c.tags || []).map(t => e('span',{className:'chip', key:t}, t)))
               ))
             : e('div',{className:'meta', style:{padding:'0 12px 12px'}}, me ? 'No recommendations yet — save a few favorites.' : 'Log in to see recommendations.'),
           document.getElementById('recs-spot')
@@ -417,11 +422,11 @@
 
         // Nearby grid
         ReactDOM.createPortal(
-          rows.map(c => e('div',{className:'card', key:c.id},
+          (rows || []).map(c => e('div',{className:'card', key:c.id},
             e('div',{className:'row'},
               e('div',null,
                 e('div',{className:'title'}, c.title,' ', e('span',{className:'meta'}, `#${c.id}`)),
-                e('div',{className:'meta'}, `${c.category} • diff ${c.difficulty} • finds ${c.finds}`)
+                e('div',{className:'meta'}, `${c.category || 'general'} • diff ${c.difficulty || 1}`)
               ),
               e('div',null,
                 me
@@ -433,8 +438,8 @@
                   : e('button',{className:'btn btn-warning', onClick:()=>toast('Log in to interact')}, 'Log in to interact')
               )
             ),
-            e('div',{className:'chips'}, c.tags.map(t => e('span',{className:'chip', key:t}, t))),
-            e('div',{className:'coords'}, `${c.lat.toFixed(5)}, ${c.lon.toFixed(5)}`)
+            e('div',{className:'chips'}, (c.tags || []).map(t => e('span',{className:'chip', key:t}, t))),
+            e('div',{className:'coords'}, `${(c.latitude || c.lat || 0).toFixed(5)}, ${(c.longitude || c.lon || 0).toFixed(5)}`)
           )),
           document.getElementById('grid-spot')
         )
