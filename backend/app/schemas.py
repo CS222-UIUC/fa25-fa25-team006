@@ -43,6 +43,8 @@ class CacheOut(CacheBase):
     id: int
     creator_id: int
     created_at: datetime
+    like_count: Optional[int] = 0
+    is_liked: Optional[bool] = False
 
     class Config:
         from_attributes = True
