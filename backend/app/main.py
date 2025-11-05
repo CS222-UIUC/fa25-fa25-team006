@@ -7,7 +7,8 @@ from typing import List, Optional
 from .settings import settings
 from .database import Base, engine, get_db, SessionLocal
 from . import models, schemas
-from .auth import get_password_hash, verify_password, create_access_token, get_current_user
+from .auth import get_password_hash, verify_password, create_access_token, get_current_user, get_optional_user
+from sqlalchemy import func
 
 app = FastAPI(title="CampusCache API", version="0.1.0")
 
@@ -95,7 +96,8 @@ def create_cache(cache_in: schemas.CacheCreate, db: Session = Depends(get_db), c
     return cache
 
 @app.get("/caches", response_model=List[schemas.CacheOut])
-def list_caches(q: Optional[str] = None, difficulty: Optional[int] = None, category: Optional[str] = None, db: Session = Depends(get_db)):
+def list_caches(q: Optional[str] = None, difficulty: Optional[int] = None, category: Optional[str] = None, 
+                db: Session = Depends(get_db), current_user: Optional[models.User] = Depends(get_optional_user)):
     query = db.query(models.Cache)
     if q:
         query = query.filter(models.Cache.title.ilike(f"%{q}%"))
@@ -103,14 +105,55 @@ def list_caches(q: Optional[str] = None, difficulty: Optional[int] = None, categ
         query = query.filter(models.Cache.difficulty == difficulty)
     if category:
         query = query.filter(models.Cache.category == category)
-    return query.order_by(models.Cache.created_at.desc()).all()
+    caches = query.order_by(models.Cache.created_at.desc()).all()
+    
+    # Add like_count and is_liked to each cache
+    result = []
+    for cache in caches:
+        # Refresh to load relationships
+        db.refresh(cache)
+        like_count = len(cache.liked_by)
+        is_liked = current_user is not None and current_user in cache.liked_by if current_user else False
+        # Create cache data manually
+        cache_data = {
+            "id": cache.id,
+            "title": cache.title,
+            "description": cache.description,
+            "latitude": cache.latitude,
+            "longitude": cache.longitude,
+            "difficulty": cache.difficulty,
+            "category": cache.category,
+            "creator_id": cache.creator_id,
+            "created_at": cache.created_at,
+            "like_count": like_count,
+            "is_liked": is_liked
+        }
+        result.append(cache_data)
+    
+    return result
 
 @app.get("/caches/{cache_id}", response_model=schemas.CacheOut)
-def get_cache(cache_id: int, db: Session = Depends(get_db)):
+def get_cache(cache_id: int, db: Session = Depends(get_db), current_user: Optional[models.User] = Depends(get_optional_user)):
     cache = db.query(models.Cache).get(cache_id)
     if not cache:
         raise HTTPException(404, "Cache not found")
-    return cache
+    db.refresh(cache)
+    like_count = len(cache.liked_by)
+    is_liked = current_user is not None and current_user in cache.liked_by if current_user else False
+    cache_data = {
+        "id": cache.id,
+        "title": cache.title,
+        "description": cache.description,
+        "latitude": cache.latitude,
+        "longitude": cache.longitude,
+        "difficulty": cache.difficulty,
+        "category": cache.category,
+        "creator_id": cache.creator_id,
+        "created_at": cache.created_at,
+        "like_count": like_count,
+        "is_liked": is_liked
+    }
+    return cache_data
 
 @app.patch("/caches/{cache_id}", response_model=schemas.CacheOut)
 def update_cache(cache_id: int, cache_upd: schemas.CacheUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
@@ -155,7 +198,6 @@ def create_log(log_in: schemas.LogCreate, db: Session = Depends(get_db), current
 
 @app.get("/leaderboard")
 def leaderboard(db: Session = Depends(get_db)):
-    from sqlalchemy import func
     rows = (
         db.query(models.User.username, func.count(models.LogEntry.id).label("finds"))
         .join(models.LogEntry, models.LogEntry.user_id == models.User.id, isouter=True)
@@ -165,3 +207,69 @@ def leaderboard(db: Session = Depends(get_db)):
         .all()
     )
     return [{"username": r[0], "finds": int(r[1] or 0)} for r in rows]
+
+# ---- Likes ----
+
+@app.post("/caches/{cache_id}/like")
+def like_cache(cache_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """Like a cache."""
+    cache = db.query(models.Cache).get(cache_id)
+    if not cache:
+        raise HTTPException(404, "Cache not found")
+    
+    if current_user in cache.liked_by:
+        raise HTTPException(400, "Cache already liked")
+    
+    cache.liked_by.append(current_user)
+    db.commit()
+    db.refresh(cache)
+    
+    like_count = len(cache.liked_by)
+    return {"ok": True, "like_count": like_count, "is_liked": True}
+
+@app.delete("/caches/{cache_id}/like")
+def unlike_cache(cache_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """Unlike a cache."""
+    cache = db.query(models.Cache).get(cache_id)
+    if not cache:
+        raise HTTPException(404, "Cache not found")
+    
+    if current_user not in cache.liked_by:
+        raise HTTPException(400, "Cache not liked")
+    
+    cache.liked_by.remove(current_user)
+    db.commit()
+    db.refresh(cache)
+    
+    like_count = len(cache.liked_by)
+    return {"ok": True, "like_count": like_count, "is_liked": False}
+
+@app.get("/me/liked", response_model=List[schemas.CacheOut])
+def get_liked_caches(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """Get all caches liked by the current user."""
+    user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    
+    liked_caches = user.liked_caches
+    result = []
+    for cache in liked_caches:
+        db.refresh(cache)
+        like_count = len(cache.liked_by)
+        is_liked = True  # User is viewing their own liked caches
+        cache_data = {
+            "id": cache.id,
+            "title": cache.title,
+            "description": cache.description,
+            "latitude": cache.latitude,
+            "longitude": cache.longitude,
+            "difficulty": cache.difficulty,
+            "category": cache.category,
+            "creator_id": cache.creator_id,
+            "created_at": cache.created_at,
+            "like_count": like_count,
+            "is_liked": is_liked
+        }
+        result.append(cache_data)
+    
+    return result

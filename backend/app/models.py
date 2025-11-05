@@ -1,7 +1,16 @@
-from sqlalchemy import Column, Integer, String, Text, Float, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Text, Float, ForeignKey, DateTime, UniqueConstraint, Table
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime
 from .database import Base
+
+# Association table for many-to-many relationship between users and liked caches
+cache_likes = Table(
+    "cache_likes",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+    Column("cache_id", Integer, ForeignKey("caches.id"), primary_key=True),
+    Column("created_at", DateTime, default=datetime.utcnow),
+)
 
 class User(Base):
     __tablename__ = "users"
@@ -13,6 +22,7 @@ class User(Base):
 
     caches: Mapped[list["Cache"]] = relationship("Cache", back_populates="creator")
     logs: Mapped[list["LogEntry"]] = relationship("LogEntry", back_populates="user")
+    liked_caches: Mapped[list["Cache"]] = relationship("Cache", secondary=cache_likes, back_populates="liked_by")
 
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', display_name='{self.display_name}')>"
@@ -31,6 +41,7 @@ class Cache(Base):
 
     creator: Mapped["User"] = relationship("User", back_populates="caches")
     logs: Mapped[list["LogEntry"]] = relationship("LogEntry", back_populates="cache", cascade="all, delete")
+    liked_by: Mapped[list["User"]] = relationship("User", secondary=cache_likes, back_populates="liked_caches")
 
     def __repr__(self):
         return f"<Cache(id={self.id}, title='{self.title}', creator_id={self.creator_id})>"
