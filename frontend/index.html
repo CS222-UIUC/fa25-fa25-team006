@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Geocaching (Local Demo)</title>
+  <title>CampusCache - UIUC</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- React via CDN -->
@@ -15,65 +15,76 @@
 
   <style>
     :root{
-      --bg:#0b0e12;
-      --panel:#12161c;
-      --muted:#9aa4b2;
-      --text:#e8edf3;
-      --brand:#6aa7ff;
-      --accent:#88f0c2;
-      --border:#1d242d;
-      --chip:#1a212b;
-      --btn:#1b5cff;
-      --btn-ghost:#1a212b;
-      --shadow: 0 6px 24px rgba(0,0,0,.35);
-      --radius:14px;
+      /* UIUC Official Colors */
+      --uiuc-blue:#13294B;
+      --uiuc-orange:#FF5F05;
+      --uiuc-blue-light:#7C95C4;
+      --uiuc-blue-dark:#0A1A2E;
+      
+      --bg:#f5f5f5;
+      --panel:#ffffff;
+      --muted:#6c757d;
+      --text:#13294B;
+      --brand:var(--uiuc-orange);
+      --accent:var(--uiuc-orange);
+      --border:#dee2e6;
+      --chip:#f8f9fa;
+      --btn:var(--uiuc-orange);
+      --btn-ghost:#f8f9fa;
+      --shadow: 0 4px 16px rgba(19, 41, 75, 0.1);
+      --radius:12px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0; background:linear-gradient(180deg,#0b0e12, #0b0e12 40%, #0e131a 100%);
-      color:var(--text); font: 15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;
+      margin:0; background:linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+      color:var(--text); font: 15px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     }
 
-    /* Top bar */
+    /* Top bar - UIUC themed */
     .appbar{
       position:sticky; top:0; z-index:10;
       backdrop-filter:saturate(140%) blur(10px);
-      background:rgba(11,14,18,.7); border-bottom:1px solid var(--border);
+      background:var(--uiuc-blue); border-bottom:3px solid var(--uiuc-orange);
+      box-shadow: 0 2px 8px rgba(19, 41, 75, 0.2);
     }
     .appbar-inner{
       max-width:1080px; margin:0 auto; padding:14px 18px;
       display:flex; gap:12px; align-items:center; justify-content:space-between;
     }
-    .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px}
-    .badge{font-size:12px; padding:2px 8px; border-radius:999px; background:#0f1420; border:1px solid var(--border); color:var(--muted)}
+    .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px; color:#ffffff}
+    .badge{font-size:12px; padding:2px 8px; border-radius:999px; background:var(--uiuc-orange); border:none; color:#ffffff; font-weight:600}
 
     .container{max-width:1080px; margin:18px auto; padding:0 18px}
-    .panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); border-top:3px solid var(--uiuc-orange)}
 
     /* Controls */
     .controls{ padding:16px; display:flex; flex-wrap:wrap; gap:10px; align-items:center }
     .input{
-      background:#0d1218; border:1px solid var(--border); color:var(--text);
+      background:#ffffff; border:1px solid var(--border); color:var(--text);
       padding:10px 12px; border-radius:10px; outline:none; min-width:220px;
+      transition: border-color 0.2s ease;
     }
+    .input:focus{border-color:var(--uiuc-orange); box-shadow: 0 0 0 3px rgba(255, 95, 5, 0.1);}
     .input.small{min-width:100px; width:110px}
     .btn{
-      border:0; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600;
-      transition:.15s transform ease, .15s opacity ease;
+      border:0; padding:10px 18px; border-radius:10px; cursor:pointer; font-weight:600;
+      transition:.15s all ease;
     }
-    .btn:hover{transform:translateY(-1px)}
+    .btn:hover{transform:translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15);}
     .btn:active{transform:translateY(0)}
-    .btn-primary{background:var(--btn); color:#fff}
-    .btn-ghost{background:var(--btn-ghost); color:var(--text); border:1px solid var(--border)}
-    .btn-warning{background:#f0b429; color:#101418}
+    .btn-primary{background:var(--uiuc-orange); color:#fff}
+    .btn-primary:hover{background:#e85505; box-shadow: 0 4px 12px rgba(255, 95, 5, 0.3);}
+    .btn-ghost{background:var(--btn-ghost); color:var(--uiuc-blue); border:1px solid var(--border)}
+    .btn-ghost:hover{background:#e9ecef; border-color:var(--uiuc-orange);}
+    .btn-warning{background:var(--uiuc-orange); color:#fff}
 
     /* Map */
     #map{ height:360px; width:100%; border-radius:calc(var(--radius) - 2px); overflow:hidden }
     .map-wrap{ padding:10px; }
 
     /* Sections */
-    h2{margin:14px 16px 8px; font-size:18px; letter-spacing:.2px}
+    h2{margin:14px 16px 8px; font-size:20px; letter-spacing:.2px; color:var(--uiuc-blue); font-weight:700; border-bottom:2px solid var(--uiuc-orange); padding-bottom:8px}
     .grid{
       display:grid; gap:12px; padding:10px;
       grid-template-columns: repeat(auto-fill, minmax(280px,1fr));
@@ -81,22 +92,24 @@
 
     /* Cards */
     .card{
-      background:#0f141b; border:1px solid var(--border); border-radius:12px; padding:12px;
-      box-shadow: 0 4px 18px rgba(0,0,0,.25);
-      display:flex; flex-direction:column; gap:10px;
+      background:#ffffff; border:1px solid var(--border); border-radius:12px; padding:16px;
+      box-shadow: 0 2px 8px rgba(19, 41, 75, 0.08);
+      display:flex; flex-direction:column; gap:12px;
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
     }
+    .card:hover{box-shadow: 0 4px 16px rgba(19, 41, 75, 0.12); transform: translateY(-2px);}
     .row{display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap}
-    .title{font-weight:700}
+    .title{font-weight:700; color:var(--uiuc-blue)}
     .meta{color:var(--muted); font-size:12px}
     .chips{display:flex; flex-wrap:wrap; gap:6px}
-    .chip{background:var(--chip); border:1px solid var(--border); color:#c4ceda; padding:2px 8px; border-radius:999px; font-size:12px}
+    .chip{background:var(--uiuc-blue-light); border:none; color:var(--uiuc-blue); padding:4px 10px; border-radius:999px; font-size:12px; font-weight:500}
     .coords{color:var(--muted); font-family:ui-monospace, Menlo, Consolas, monospace; font-size:12px}
 
     /* Toast */
     .toast{
-      position:fixed; bottom:16px; right:16px; background:#11161e; border:1px solid var(--border);
-      padding:10px 12px; border-radius:10px; color:#cfe3ff; box-shadow:var(--shadow); opacity:0; transform:translateY(8px);
-      transition:.2s ease; pointer-events:none;
+      position:fixed; bottom:16px; right:16px; background:var(--uiuc-blue); border:2px solid var(--uiuc-orange);
+      padding:12px 16px; border-radius:10px; color:#ffffff; box-shadow:var(--shadow); opacity:0; transform:translateY(8px);
+      transition:.2s ease; pointer-events:none; font-weight:500;
     }
     .toast.show{opacity:1; transform:translateY(0)}
   </style>
@@ -105,8 +118,8 @@
   <div class="appbar">
     <div class="appbar-inner">
       <div class="brand">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="#6aa7ff" aria-hidden="true"><path d="M12 2l2.39 4.84L20 8l-4 3.89L17 18l-5-2.63L7 18l1-6.11L4 8l5.61-1.16L12 2z"/></svg>
-        GeoCache <span class="badge">local demo</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="#FF5F05" aria-hidden="true"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18l8 4v8.64l-8 4-8-4V8.18l8-4z"/></svg>
+        CampusCache <span class="badge">UIUC</span>
       </div>
       <div id="auth-spot"></div>
     </div>
@@ -272,7 +285,7 @@
               e('input',{className:'input', placeholder:'username (admin or alex)', value:username, onChange:e=>setUsername(e.target.value)}),
               e('input',{className:'input', type:'password', placeholder:'password', value:password, onChange:e=>setPassword(e.target.value)}),
               e('button',{className:'btn btn-primary', type:'submit'}, 'Log in'),
-              loginErr && e('span',{style:{color:'#ff9ea3', marginLeft:6}}, loginErr)
+              loginErr && e('span',{style:{color:'var(--uiuc-orange)', marginLeft:6, fontWeight:500}}, loginErr)
             ),
           document.getElementById('auth-spot')
         ),
@@ -301,7 +314,7 @@
                   e('div',null,
                     e('button',{className:'btn btn-ghost', onClick:()=>api.finds(c.id,'from rec').then(()=>{ loadPublic(); loadAuthed(); toast('Find logged'); })}, 'Log find'),
                     ' ',
-                    e('button',{className:'btn', style:{background: isFav(c.id)?'#2f8dff': 'var(--btn)'}, onClick:()=>api.toggleFav(c.id).then(()=>{ loadAuthed(); toast(isFav(c.id)?'Removed':'Saved'); })}, isFav(c.id)?'★ Unsave':'☆ Save')
+                    e('button',{className:'btn', style:{background: isFav(c.id)?'var(--uiuc-blue)': 'var(--btn)'}, onClick:()=>api.toggleFav(c.id).then(()=>{ loadAuthed(); toast(isFav(c.id)?'Removed':'Saved'); })}, isFav(c.id)?'★ Unsave':'☆ Save')
                   )
                 ),
                 e('div',{className:'chips'}, c.tags.map(t => e('span',{className:'chip', key:t}, t)))
