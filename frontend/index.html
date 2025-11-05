@@ -267,6 +267,9 @@
         favs: () => fetch('/api/favorites', { headers: h() }).then(j),
         finds: (cacheId, note) => fetch('/api/finds', {method:'POST', headers: h(), body: JSON.stringify({cacheId, note})}).then(j),
         recs: () => fetch('/api/recommendations', { headers: h() }).then(j),
+        like: (cacheId) => fetch(`/api/caches/${cacheId}/like`, {method:'POST', headers: h()}).then(j),
+        unlike: (cacheId) => fetch(`/api/caches/${cacheId}/like`, {method:'DELETE', headers: h()}).then(j),
+        liked: () => fetch('/api/me/liked', { headers: h() }).then(j),
       };
     }
 
@@ -354,6 +357,40 @@
       }, []);
 
       const isFav = (id) => favs.some(f => f.id === id);
+      const isLiked = (id) => {
+        const cache = rows.find(c => c.id === id) || recs.find(c => c.id === id);
+        return cache?.is_liked || false;
+      };
+      const getLikeCount = (id) => {
+        const cache = rows.find(c => c.id === id) || recs.find(c => c.id === id);
+        return cache?.like_count || 0;
+      };
+      
+      const handleLike = async (cacheId) => {
+        if (!me) {
+          toast('Log in to like caches');
+          return;
+        }
+        try {
+          const cache = rows.find(c => c.id === cacheId) || recs.find(c => c.id === cacheId);
+          const isLiked = cache?.is_liked;
+          if (isLiked) {
+            await api.unlike(cacheId);
+            // Update local state for both rows and recs
+            setRows(rows.map(c => c.id === cacheId ? {...c, is_liked: false, like_count: Math.max(0, (c.like_count || 0) - 1)} : c));
+            setRecs(recs.map(c => c.id === cacheId ? {...c, is_liked: false, like_count: Math.max(0, (c.like_count || 0) - 1)} : c));
+            toast('Unliked');
+          } else {
+            await api.like(cacheId);
+            // Update local state for both rows and recs
+            setRows(rows.map(c => c.id === cacheId ? {...c, is_liked: true, like_count: (c.like_count || 0) + 1} : c));
+            setRecs(recs.map(c => c.id === cacheId ? {...c, is_liked: true, like_count: (c.like_count || 0) + 1} : c));
+            toast('Liked!');
+          }
+        } catch(e) {
+          toast(e.message || 'Failed to update like');
+        }
+      };
 
       const handleLogin = async (e)=>{
         e.preventDefault(); setLoginErr("");
@@ -408,10 +445,10 @@
                     e('div',{className:'title'}, c.title,' ', e('span',{className:'meta'}, `#${c.id}`)),
                     e('div',{className:'meta'}, `${c.category || 'general'} • diff ${c.difficulty || 1}`)
                   ),
-                  e('div',null,
+                  e('div',{style:{display:'flex', gap:'8px', alignItems:'center'}},
                     e('button',{className:'btn btn-ghost', onClick:()=>api.finds(c.id,'from rec').then(()=>{ loadPublic(); loadAuthed(); toast('Find logged'); })}, 'Log find'),
-                    ' ',
-                    e('button',{className:'btn', style:{background: isFav(c.id)?'var(--uiuc-blue)': 'var(--btn)'}, onClick:()=>api.toggleFav(c.id).then(()=>{ loadAuthed(); toast(isFav(c.id)?'Removed':'Saved'); })}, isFav(c.id)?'★ Unsave':'☆ Save')
+                    e('button',{className:'btn', style:{background: isFav(c.id)?'var(--uiuc-blue)': 'var(--btn)'}, onClick:()=>api.toggleFav(c.id).then(()=>{ loadAuthed(); toast(isFav(c.id)?'Removed':'Saved'); })}, isFav(c.id)?'★ Unsave':'☆ Save'),
+                    e('button',{className:'btn btn-ghost', style:{background: c.is_liked?'#ff6b6b':'transparent', color: c.is_liked?'#fff':'inherit', minWidth:'60px'}, onClick:()=>handleLike(c.id)}, `❤️ ${c.like_count || 0}`)
                   )
                 ),
                 e('div',{className:'chips'}, (c.tags || []).map(t => e('span',{className:'chip', key:t}, t)))
@@ -428,14 +465,17 @@
                 e('div',{className:'title'}, c.title,' ', e('span',{className:'meta'}, `#${c.id}`)),
                 e('div',{className:'meta'}, `${c.category || 'general'} • diff ${c.difficulty || 1}`)
               ),
-              e('div',null,
+              e('div',{style:{display:'flex', gap:'8px', alignItems:'center'}},
                 me
                   ? e(React.Fragment,null,
                       e('button',{className:'btn btn-ghost', onClick:()=>api.finds(c.id,'found it!').then(()=>{ loadPublic(); loadAuthed(); toast('Find logged'); })}, 'Log find'),
-                      ' ',
-                      e('button',{className:'btn', style:{background: isFav(c.id)?'#2f8dff':'var(--btn)'}, onClick:()=>api.toggleFav(c.id).then(()=>{ loadAuthed(); toast(isFav(c.id)?'Removed':'Saved'); })}, isFav(c.id)?'★ Unsave':'☆ Save')
+                      e('button',{className:'btn', style:{background: isFav(c.id)?'#2f8dff':'var(--btn)'}, onClick:()=>api.toggleFav(c.id).then(()=>{ loadAuthed(); toast(isFav(c.id)?'Removed':'Saved'); })}, isFav(c.id)?'★ Unsave':'☆ Save'),
+                      e('button',{className:'btn btn-ghost', style:{background: isLiked(c.id)?'#ff6b6b':'transparent', color: isLiked(c.id)?'#fff':'inherit', minWidth:'60px'}, onClick:()=>handleLike(c.id)}, `❤️ ${getLikeCount(c.id)}`)
                     )
-                  : e('button',{className:'btn btn-warning', onClick:()=>toast('Log in to interact')}, 'Log in to interact')
+                  : e(React.Fragment,null,
+                      e('button',{className:'btn btn-warning', onClick:()=>toast('Log in to interact')}, 'Log in to interact'),
+                      e('span',{style:{color:'var(--muted)', fontSize:'14px'}}, `❤️ ${getLikeCount(c.id)}`)
+                    )
               )
             ),
             e('div',{className:'chips'}, (c.tags || []).map(t => e('span',{className:'chip', key:t}, t))),
