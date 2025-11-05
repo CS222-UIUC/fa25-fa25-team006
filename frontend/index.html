@@ -21,6 +21,7 @@
       --uiuc-blue-light:#7C95C4;
       --uiuc-blue-dark:#0A1A2E;
       
+      /* Light mode */
       --bg:#f5f5f5;
       --panel:#ffffff;
       --muted:#6c757d;
@@ -34,11 +35,28 @@
       --shadow: 0 4px 16px rgba(19, 41, 75, 0.1);
       --radius:12px;
     }
+    
+    /* Dark mode */
+    [data-theme="dark"] {
+      --bg:#0a1a2e;
+      --panel:#12161c;
+      --muted:#9aa4b2;
+      --text:#e8edf3;
+      --border:#1d242d;
+      --chip:#1a212b;
+      --btn-ghost:#1a212b;
+      --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0; background:linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
       color:var(--text); font: 15px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    
+    [data-theme="dark"] body {
+      background: linear-gradient(180deg, #0a1a2e 0%, #12161c 100%);
     }
 
     /* Top bar - UIUC themed */
@@ -52,18 +70,44 @@
       max-width:1080px; margin:0 auto; padding:14px 18px;
       display:flex; gap:12px; align-items:center; justify-content:space-between;
     }
+    
+    .dark-mode-toggle {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+    }
+    
+    .dark-mode-toggle:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: var(--uiuc-orange);
+    }
+    
+    .dark-mode-toggle svg {
+      width: 16px;
+      height: 16px;
+    }
     .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px; color:#ffffff}
     .badge{font-size:12px; padding:2px 8px; border-radius:999px; background:var(--uiuc-orange); border:none; color:#ffffff; font-weight:600}
 
     .container{max-width:1080px; margin:18px auto; padding:0 18px}
-    .panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); border-top:3px solid var(--uiuc-orange)}
+    .panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); border-top:3px solid var(--uiuc-orange); transition: background-color 0.3s ease, border-color 0.3s ease}
 
     /* Controls */
     .controls{ padding:16px; display:flex; flex-wrap:wrap; gap:10px; align-items:center }
     .input{
-      background:#ffffff; border:1px solid var(--border); color:var(--text);
+      background:var(--panel); border:1px solid var(--border); color:var(--text);
       padding:10px 12px; border-radius:10px; outline:none; min-width:220px;
-      transition: border-color 0.2s ease;
+      transition: border-color 0.2s ease, background-color 0.3s ease, color 0.3s ease;
     }
     .input:focus{border-color:var(--uiuc-orange); box-shadow: 0 0 0 3px rgba(255, 95, 5, 0.1);}
     .input.small{min-width:100px; width:110px}
@@ -92,10 +136,14 @@
 
     /* Cards */
     .card{
-      background:#ffffff; border:1px solid var(--border); border-radius:12px; padding:16px;
+      background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px;
       box-shadow: 0 2px 8px rgba(19, 41, 75, 0.08);
       display:flex; flex-direction:column; gap:12px;
-      transition: box-shadow 0.2s ease, transform 0.2s ease;
+      transition: box-shadow 0.2s ease, transform 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
+    }
+    
+    [data-theme="dark"] .card {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
     .card:hover{box-shadow: 0 4px 16px rgba(19, 41, 75, 0.12); transform: translateY(-2px);}
     .row{display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap}
@@ -121,7 +169,18 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="#FF5F05" aria-hidden="true"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18l8 4v8.64l-8 4-8-4V8.18l8-4z"/></svg>
         CampusCache <span class="badge">UIUC</span>
       </div>
-      <div id="auth-spot"></div>
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div id="auth-spot"></div>
+        <button class="dark-mode-toggle" id="dark-mode-toggle" aria-label="Toggle dark mode">
+          <svg id="dark-icon" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+            <path fillRule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10 10 0 01-19.47 0 .75.75 0 01.982-.98zM17.25 16.5a.75.75 0 00.75-.75v-3a.75.75 0 00-1.5 0v3a.75.75 0 00.75.75z" clipRule="evenodd"/>
+          </svg>
+          <svg id="light-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
+          </svg>
+          <span id="dark-mode-text">Dark</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -146,6 +205,39 @@
 
   <script>
     const e = React.createElement;
+
+    // Dark mode functionality
+    (function() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = saved ? saved === 'dark' : prefersDark;
+      
+      if (isDark) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.getElementById('dark-icon').style.display = 'none';
+        document.getElementById('light-icon').style.display = 'block';
+        document.getElementById('dark-mode-text').textContent = 'Light';
+      }
+      
+      document.getElementById('dark-mode-toggle').addEventListener('click', function() {
+        const root = document.documentElement;
+        const isDark = root.getAttribute('data-theme') === 'dark';
+        
+        if (isDark) {
+          root.removeAttribute('data-theme');
+          localStorage.setItem('theme', 'light');
+          document.getElementById('dark-icon').style.display = 'none';
+          document.getElementById('light-icon').style.display = 'block';
+          document.getElementById('dark-mode-text').textContent = 'Dark';
+        } else {
+          root.setAttribute('data-theme', 'dark');
+          localStorage.setItem('theme', 'dark');
+          document.getElementById('dark-icon').style.display = 'block';
+          document.getElementById('light-icon').style.display = 'none';
+          document.getElementById('dark-mode-text').textContent = 'Light';
+        }
+      });
+    })();
 
     // Simple token store
     const tokenStore = {
