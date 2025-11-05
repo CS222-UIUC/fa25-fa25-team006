@@ -11,7 +11,7 @@ export default function Login() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     try {
-      if (mode === 'login') {
+      if (mode === 'login') { 
         await login(username, password)
         setMsg('Logged in! You can now add caches from the Map page.')
       } else {
