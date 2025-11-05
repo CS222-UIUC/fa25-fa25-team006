@@ -58,24 +58,25 @@ export default function MapView() {
   return (
     <div className="container">
       <h2>Map</h2>
-      <p>Click on the map to select coordinates, then fill the form to create a cache. You must be logged in.</p>
+      <p>Click on the map to select coordinates, then fill the form to create a cache. You must be logged in to create caches.</p>
       <div className="card">
+        <h3>Create New Cache</h3>
         <form onSubmit={addCache}>
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16}}>
             <div>
-              <label>Title</label><br/>
-              <input value={title} onChange={e=>setTitle(e.target.value)} required/>
+              <label>Title</label>
+              <input value={title} onChange={e=>setTitle(e.target.value)} required placeholder="Cache title"/>
             </div>
             <div>
-              <label>Difficulty (1-5)</label><br/>
+              <label>Difficulty (1-5)</label>
               <input type="number" min={1} max={5} value={difficulty} onChange={e=>setDifficulty(parseInt(e.target.value))}/>
             </div>
             <div style={{gridColumn:'1 / span 2'}}>
-              <label>Description</label><br/>
-              <input value={desc} onChange={e=>setDesc(e.target.value)} />
+              <label>Description</label>
+              <input value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Describe the cache location or puzzle"/>
             </div>
             <div>
-              <label>Category</label><br/>
+              <label>Category</label>
               <select value={category} onChange={e=>setCategory(e.target.value)}>
                 <option value="general">general</option>
                 <option value="puzzle">puzzle</option>
@@ -83,11 +84,11 @@ export default function MapView() {
               </select>
             </div>
             <div>
-              <label>Selected coords</label><br/>
-              <input value={selectedPos ? selectedPos.join(', ') : ''} readOnly placeholder="click the map"/>
+              <label>Selected coordinates</label>
+              <input value={selectedPos ? `${selectedPos[0].toFixed(6)}, ${selectedPos[1].toFixed(6)}` : ''} readOnly placeholder="Click on the map to select"/>
             </div>
           </div>
-          <div style={{marginTop:8}}>
+          <div style={{marginTop:16}}>
             <button type="submit">Create cache</button>
           </div>
         </form>
@@ -95,8 +96,9 @@ export default function MapView() {
 
       <div className="card">
         <h3>Leaderboard</h3>
+        <p>Top cache finders in the UIUC community</p>
         <ol>
-          {board.map((b,i)=>(<li key={i}>{b.username}: {b.finds}</li>))}
+          {board.length > 0 ? board.map((b,i)=>(<li key={i}><strong>{b.username}</strong>: {b.finds} {b.finds === 1 ? 'find' : 'finds'}</li>)) : <li>No finds yet. Be the first!</li>}
         </ol>
       </div>
 
