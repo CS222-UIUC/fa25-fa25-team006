@@ -2,10 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2/promise");
 require("dotenv").config();
-<<<<<<< HEAD
-=======
 const { getRecommendations } = require("./recommendation");
->>>>>>> myrepo/main
 
 const app = express();
 app.use(cors());
@@ -116,35 +113,17 @@ app.post("/api/login", async (req, res) => {
 // GET /api/caches – list recent caches
 app.get("/api/caches", async (req, res) => {
   try {
-<<<<<<< HEAD
-    const [rows] = await pool.query(
-      `SELECT 
-          c.cache_id   AS id,
-          c.title,
-          c.description,
-=======
     const token = req.headers["x-auth-token"];
     const userId = token && sessions.has(token) ? sessions.get(token) : null;
 
     let query = `SELECT 
           c.cache_id   AS id,
           c.title,
->>>>>>> myrepo/main
           c.latitude,
           c.longitude,
           c.difficulty,
           cat.name      AS category,
           c.owner_id    AS creator_id,
-<<<<<<< HEAD
-          c.created_at
-       FROM CACHES c
-       JOIN CATEGORIES cat ON c.category_id = cat.category_id
-       WHERE c.is_active = 1
-       ORDER BY c.created_at DESC
-       LIMIT 200`
-    );
-    res.json(rows);
-=======
           c.is_active,
           c.created_at,
           c.updated_at`;
@@ -176,7 +155,6 @@ app.get("/api/caches", async (req, res) => {
     }));
 
     res.json(result);
->>>>>>> myrepo/main
   } catch (err) {
     console.error("get /api/caches error:", err);
     res.status(500).json({ error: "server error" });
@@ -192,10 +170,7 @@ app.post("/api/caches", auth, async (req, res) => {
     longitude,
     difficulty,
     category,
-<<<<<<< HEAD
-=======
     is_active,
->>>>>>> myrepo/main
   } = req.body || {};
 
   if (!title || latitude == null || longitude == null) {
@@ -204,8 +179,6 @@ app.post("/api/caches", auth, async (req, res) => {
       .json({ error: "title, latitude, and longitude are required" });
   }
 
-<<<<<<< HEAD
-=======
   // Validate is_active: must be 0 or 1, default to 1
   let activeStatus = 1;
   if (is_active !== undefined) {
@@ -216,7 +189,6 @@ app.post("/api/caches", auth, async (req, res) => {
     activeStatus = activeValue;
   }
 
->>>>>>> myrepo/main
   try {
     const catName = category || "Traditional";
     const [catRows] = await pool.query(
@@ -242,11 +214,7 @@ app.post("/api/caches", auth, async (req, res) => {
            visibility,
            is_active,
            created_at)
-<<<<<<< HEAD
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'public', 1, NOW())`,
-=======
        VALUES (?, ?, ?, ?, ?, ?, ?, 'public', ?, NOW())`,
->>>>>>> myrepo/main
       [
         req.userId, // app_user_id from session
         categoryId,
@@ -255,10 +223,7 @@ app.post("/api/caches", auth, async (req, res) => {
         Number(difficulty || 1),
         Number(latitude),
         Number(longitude),
-<<<<<<< HEAD
-=======
         activeStatus,
->>>>>>> myrepo/main
       ]
     );
 
@@ -268,22 +233,14 @@ app.post("/api/caches", auth, async (req, res) => {
       `SELECT 
           c.cache_id   AS id,
           c.title,
-<<<<<<< HEAD
-          c.description,
-=======
->>>>>>> myrepo/main
           c.latitude,
           c.longitude,
           c.difficulty,
           cat.name      AS category,
           c.owner_id    AS creator_id,
-<<<<<<< HEAD
-          c.created_at
-=======
           c.is_active,
           c.created_at,
           c.updated_at
->>>>>>> myrepo/main
        FROM CACHES c
        JOIN CATEGORIES cat ON c.category_id = cat.category_id
        WHERE c.cache_id = ?`,
@@ -297,8 +254,6 @@ app.post("/api/caches", auth, async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-=======
 // POST /api/caches/:id/found – mark a cache as found
 app.post("/api/caches/:id/found", auth, async (req, res) => {
   const cacheId = parseInt(req.params.id);
@@ -705,25 +660,16 @@ app.get("/api/caches/:id/status-log", auth, async (req, res) => {
   }
 });
 
->>>>>>> myrepo/main
 // --- Leaderboard ---
 app.get("/api/leaderboard", async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT 
-<<<<<<< HEAD
-          u.name  AS username,
-          COUNT(f.log_id) AS finds
-       FROM USERS u
-       JOIN FIND_LOGS f ON u.user_id = f.finder_id
-       GROUP BY u.user_id
-=======
           COALESCE(u.display_name, u.username) AS username,
           COUNT(f.log_id) AS finds
        FROM APP_USERS u
        JOIN FIND_LOGS f ON u.app_user_id = f.finder_id
        GROUP BY u.app_user_id, u.username, u.display_name
->>>>>>> myrepo/main
        ORDER BY finds DESC
        LIMIT 10`
     );
@@ -734,8 +680,6 @@ app.get("/api/leaderboard", async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-=======
 // POST /api/caches/:id/view – track cache view interaction
 app.post("/api/caches/:id/view", auth, async (req, res) => {
   const cacheId = parseInt(req.params.id);
@@ -841,7 +785,6 @@ app.post("/api/setup/recommendation-table", async (req, res) => {
   }
 })();
 
->>>>>>> myrepo/main
 const port = Number(process.env.PORT || 4000);
 app.listen(port, () => {
   console.log(`Backend listening on http://localhost:${port}`);
